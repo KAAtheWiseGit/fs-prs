@@ -1,0 +1,14 @@
+image: alpine/latest
+oauth: git.sr.ht/REPOSITORIES:RW git.sr.ht/PROFILE:RO
+packages:
+  - hut
+  - pandoc
+sources:
+  - https://git.sr.ht/~kaathewise/fs
+  - https://github.com/jgm/djot.lua
+tasks:
+  - readme: |
+      cp fs/README.dj djot.lua
+      cd djot.lua
+      pandoc --from djot-reader.lua --to html README.dj --output readme.html
+      hut git update --readme readme.html --repo https://git.sr.ht/~kaathewise/threadbath

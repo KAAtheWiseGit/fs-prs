@@ -1,0 +1,99 @@
+# Undo algorithm
+
+`fs` has to deal with a major issue: it doesn't have full ownership of
+the objects it's manipulating.  The undo manager must be able to cope
+with changes done outside the buffer, while complying with the needed
+properties.
+
+Current implementation algorithm from [the paper][paper] can't
+gracefully handle external changes to the file system, even though it
+deals with the documents.  I overlooked the fact that makes the
+presumption that the current working documents are the only ones the
+user cares about.  So, even the weakened properties aren't satisfied.
+
+
+## Properties
+
+: Stable Execution Property
+
+  A command undo and redo puts the state in the exact position it was
+  before this action.  This is important, because otherwise a quick
+  undo/redo might introduce changes to the file system, which is
+  counter-intuitive and not immediately apparent.
+
+: Weakened Stable Execution Property
+
+  Same as before, but we are allowed to undo more commands as a part of
+  the action.  Still doesn't work for us.
+
+: Stable Result Property
+
+  A command is always redone and done from the state it was originally
+  done in.  This can be partially ensured using checksums, but that
+  takes time (we can't go calculate the `home` checksum each time we
+  move a file) and still blocks some commands on it.
+
+: Commutative Undo Property
+
+  Order of unrelated undo/redo commands doesn't change the state.  This
+  works fine as long as we are strict with the definition of
+  "unrelated", and we probably will be, as noted below.
+
+: Minimalistic Undo Property
+
+  Do not undo more than we need, i.e. skip unrelated commands.  Once
+  again, unlike in the text editors, we have to manually figure out all
+  of the connections, so this should be simple to implement.
+
+
+## Approaches to the properties
+
+### Ditching redo
+
+Since `fs` doesn't have the capabilities to write to files, undoing an
+undo will always mean deleting files or bringing the deleted one from
+the trash.  This trivially satisfies stable execution, but we lose half
+of the {-ship-} algorithms utility with it.
+
+
+### State invalidation
+
+With this approach, an undo to a command doesn't delete it, but marks it
+as inactive.  A redo is only allowed if the state affords it, for
+example if a copied directory source wasn't changed.
+
+One issue is the hashing speed, see [the `fuss` notes](./fuss.dj).
+
+The second one is history poisoning.  A broad command (for example,
+moving the working directory to another place) will influence all of the
+nested paths.  Thus, undoing this action will invalidate the entire `fs`
+history within this folder.  Similarly, a changed file (recompilation of
+`Cargo.lock` files) might also poison a lot of commands.
+
+
+### Strict redo
+
+Only allow redo in simple cases.  This means constant warnings and an
+opaque limitation.  We can't show which commands can be redone in
+advance, because of the needed calculations.
+
+
+## Other techniques
+
+### Dependency cache
+
+In theory, dependencies can be cached on the history buffer push.  But
+this delegates a lot of non-trivial handling to the `dodo` caller.  This
+also makes each push $`O(n)`.  And the constant is hefty too, since we
+need to do a linear scan of the entire history and a lot of path
+manipulation.
+
+
+### Tight buffer coupling
+
+In theory I could ditch the library design and merge `dodo` into `fs`
+proper.  This will allow for several heuristics (most importantly, path
+comparison on commands _during_ their execution).
+
+
+[paper]: https://www.researchgate.net/publication/275541451

@@ -1,0 +1,9 @@
+[package]
+name = "dodo"
+description = "Generic history buffer with undo"
+version = "0.1.0"
+edition = "2021"
+license = "MPL-2.0"
+authors = ["Andrej Kolchin <kaathewise@protonmail.com>"]
+
+[dependencies]
