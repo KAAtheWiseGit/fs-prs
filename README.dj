@@ -1,0 +1,22 @@
+# CLI file system utility with undo
+
+## First checkpoint
+
+The TLDR is that the algorithm I picked doesn't work.  I spent the past
+week drawing out various scenarios on paper, and there are a whole lot
+of places where it falls flat.
+
+The catalysis of the issues was redo.  For example, suppose a file is
+copied.  The copy is edited.  Then the user executes an undo and a redo.
+This deletes the copied file.  Restoring this means either caching the
+result (which means each undo farther expands the trash) or copy the
+original file, which yields a different result.  I wrote the notes at
+`doc/algorithm.dj` for the whole array of issues I've discovered.
+
+In addition, the code architecture itself has a few defects.  I
+documented those in `doc/fuss.dj`.
+
+As a result, I'll need to rework the actual code and quickly come up
+with a new algorithm, which works in the free-form file system.  Given
+how hostile the environment is to bookkeeping, the existing research
+can't help me here.

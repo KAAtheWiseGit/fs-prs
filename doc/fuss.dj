@@ -1,0 +1,27 @@
+# `fuss` desigh
+
+## Object model
+
+The object design was a mistake.  Trying to take an ownership of a file
+is a fool's errand, especially on Unix.  I haven't figured out any good
+way to avoid
+[TOCTOU](https://en.wikipedia.org/wiki/Time-of-check_to_time-of-use)
+other than to cross one's fingers and execute the commands very fast.
+
+As such, `fuss` will probably have to be refactored to just be a set of
+utility commands on paths.  Type can be moved into another module, as
+its primary usage at the moment is to allow for nice hints at `fs`.
+
+
+## Path type
+
+Camino was also a mistake.  Paths being UTF-8 doesn't actually do
+anything, apart from creating friction.  Commands should take `std`
+paths.  The only exception is `rename`, which can take an `str` as a new
+name.
+
+
+## Error wrapper
+
+Error wrapper around IO should be better.  I don't know where to put it,
+though, here, or in `fs`.
